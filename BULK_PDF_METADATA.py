@@ -3,28 +3,30 @@ import os
 import zipfile
 import tarfile
 import logging
-import warnings
 import datetime
 from PyPDF2 import PdfReader
 
-# <module>.
-    # <class>.
-        # <object>.
-            # <method>.
-                # <attribute>
+    # <module>.
+        # <class>.
+            # <object>.
+                # <method>.
+                    # <attribute>
 
-# Control warnings
-warnings.filterwarnings("default")
-
-# Control errors from PyPDF2
-logger_zip = logging.getLogger("PyPDF2")
-logger_zip.setLevel(logging.ERROR)
-
-logger_tar = logging.getLogger("tarfile")
-logger_tar.setLevel(logging.ERROR)
 
 file_count = 0
 errors = []
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+
+# Create a custom logger with your desired name
+logger_main = logging.getLogger('STATUS')
+
+#Control errors from PyPDF2
+logger_zip = logging.getLogger("PyPDF2")
+logger_zip.setLevel(logging.WARNING)
+
+logger_tar = logging.getLogger("tarfile")
+logger_tar.setLevel(logging.ERROR)
 
 result_file = open(r"C:\Users\ratanasov2\OneDrive - DXC Production\Desktop\results", 'a')
 
@@ -33,8 +35,12 @@ archieve_dir= r"C:\Users\ratanasov2\COMBO"
 # TAR TAR TAR TAR TAR TAR TAR TAR TAR TAR TAR TAR
 def tar_processing():
 
+    logger_main.info("TAR processing - Getting TAR archieves")
+
     global file_count
     global errors
+
+    logger_main.info("TAR processing - Check the PDFs and metadata")
 
     for item in os.listdir(archieve_dir):
         tar = os.path.join(archieve_dir, item)
@@ -50,10 +56,8 @@ def tar_processing():
                         with tar_archieve.extractfile(pdf) as pdf_file:
 
                             # Read the PDF file's content in binary mode:
-                            pdf_data = io.BytesIO(pdf_file.read())
-
-                            # Check integrity
                             try:
+                                pdf_data = io.BytesIO(pdf_file.read())
                                 pdf_reader = PdfReader(pdf_data)
                                 num_pages = len(pdf_reader.pages)
                                 if num_pages == 0:
@@ -75,13 +79,20 @@ def tar_processing():
                     else:
                         continue
 
+    logger_main.info("TAR processing - Writes to results file")
+    logger_main.info("TAR processing - Finished")
+
 # ZIPS ZIPS ZIPS ZIPS ZIPS ZIPS ZIPS ZIPS ZIPS ZIPS 
 def zip_processing():
+
+    logger_main.info("ZIP processing - Getting ZIP archieves")
 
     global file_count
     global errors
 
     # Get full path to each zip file:
+    logger_main.info("ZIP processing - Check the PDFs and metadata")
+
     for item in os.listdir(archieve_dir):
         zip = os.path.join(archieve_dir, item)
 
@@ -99,12 +110,10 @@ def zip_processing():
 
                         # Open the PDF file from the ZIP archive:
                         with zip_archieve.open(zip_file.filename, 'r') as pdf_file:
-                                
-                            # Read the PDF file's content in binary mode:
-                            pdf_data = io.BytesIO(pdf_file.read())
 
-                            # Check integrity
-                            try:
+                            try:                                
+                                # Read the PDF file's content in binary mode:
+                                pdf_data = io.BytesIO(pdf_file.read())
                                 pdf_reader = PdfReader(pdf_data)
                                 num_pages = len(pdf_reader.pages)
                                 if num_pages == 0:
@@ -130,9 +139,12 @@ def zip_processing():
                             result_file.write("CRC: {}\n".format(zip_file.CRC))
                             result_file.write("Compressed size: {}\n".format(zip_file.compress_size))
                             result_file.write("Compress type: {}\n".format(zip_file.compress_type))
-                            result_file.write("Pages: {}\n".format(len(pdf_reader.pages)))
+                            #result_file.write("Pages: {}\n".format(len(pdf_reader.pages)))
                             result_file.write("\n")
                             file_count += 1  
+
+    logger_main.info("ZIP processing - Writes to results file")
+    logger_main.info("ZIP processing - Finished")
 
 zip_processing()
 tar_processing()
@@ -147,18 +159,8 @@ result_file.write("\n".join(map(str, errors)))
 result_file.write("\n")
 
 #Print results
+print()
 print("RESULTS: --> ", result_file.name)
 
 #Close the file
 result_file.close()
-
-
-
-
-
-
-
-
-
-
-
