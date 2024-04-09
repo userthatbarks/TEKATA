@@ -15,32 +15,40 @@ from PyPDF2 import PdfReader
 
 file_count = 0
 errors = []
+warnings = []
 
+# Create logging scheme for modules:
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 
-# Create a custom logger with your desired name
+# Create the logger names and set level: 
 logger_main = logging.getLogger('STATUS')
 
-#Control errors from PyPDF2
 logger_zip = logging.getLogger("PyPDF2")
-logger_zip.setLevel(logging.WARNING)
+logger_zip.setLevel(logging.ERROR)
 
 logger_tar = logging.getLogger("tarfile")
 logger_tar.setLevel(logging.ERROR)
 
-result_file = open(r"C:\Users\ratanasov2\OneDrive - DXC Production\Desktop\results", 'a')
+# Results file:
+result_file = open(r"C:\Users\ratanasov2\OneDrive - DXC Production\Desktop\results", 'w')
 
+# Archieve directory:
 archieve_dir= r"C:\Users\ratanasov2\COMBO"
 
 # TAR TAR TAR TAR TAR TAR TAR TAR TAR TAR TAR TAR
-def tar_processing():
 
-    logger_main.info("TAR processing - Getting TAR archieves")
+
+def tar_processing():
+    print()
 
     global file_count
     global errors
+    global warnings
 
+    logger_main.info("Started")
+    logger_main.info("TAR processing - Getting TAR archieves")
     logger_main.info("TAR processing - Check the PDFs and metadata")
+    logger_main.info("TAR processing - Try-Catch if any exceptions")
 
     for item in os.listdir(archieve_dir):
         tar = os.path.join(archieve_dir, item)
@@ -55,80 +63,77 @@ def tar_processing():
 
                         with tar_archieve.extractfile(pdf) as pdf_file:
 
-                            # Read the PDF file's content in binary mode:
                             try:
                                 pdf_data = io.BytesIO(pdf_file.read())
                                 pdf_reader = PdfReader(pdf_data)
-                                num_pages = len(pdf_reader.pages)
-                                if num_pages == 0:
-                                    msg = f"ERROR: {pdf_file} is invalid or empty!"
-                                    errors.append(msg)
-
+                                
                             except Exception as e:
-                                msg = f"{tar_archieve.filename} - {pdf_file.filename} : {e}"
+
+                                msg = f"{tar_archieve.name} - {pdf_file.name} : {e}"
                                 errors.append(msg)
+
+                            try:
+                                pages = len(pdf_reader.pages)
+                            
+                            except RecursionError as e:
+                                msg = f"{tar_archieve.name} - {pdf_file.name} : {e}"
+                                warnings.append(msg)
 
                             result_file.write("\n")
                             result_file.write("Archieve: {}\n".format(tar_archieve.name))
                             result_file.write("Name: {}\n".format(pdf.name))
-                            result_file.write("Pages: {}\n".format(num_pages))
+                            result_file.write("Pages: {}\n".format(pages))
                             result_file.write("Size: {}\n".format(pdf.size))
-                            result_file.write("Time: {}\n".format(datetime.datetime.fromtimestamp(pdf.mtime).strftime('%Y-%m-%d %H:%M:%S')))
+                            result_file.write("Time: {}\n".format(datetime.datetime.fromtimestamp(pdf.mtime).strftime('%Y-%M-%D %H:%M:%S')))
                             result_file.write("\n")
                             file_count += 1
                     else:
                         continue
 
-    logger_main.info("TAR processing - Writes to results file")
-    logger_main.info("TAR processing - Finished")
-
 # ZIPS ZIPS ZIPS ZIPS ZIPS ZIPS ZIPS ZIPS ZIPS ZIPS 
 def zip_processing():
 
-    logger_main.info("ZIP processing - Getting ZIP archieves")
-
     global file_count
     global errors
+    global warnings
 
-    # Get full path to each zip file:
+    logger_main.info("ZIP processing - Getting TAR archieves")
     logger_main.info("ZIP processing - Check the PDFs and metadata")
+    logger_main.info("ZIP processing - Try-Catch if any exceptions")
 
     for item in os.listdir(archieve_dir):
         zip = os.path.join(archieve_dir, item)
 
-        # Checks if the file is ZIP:
         if zipfile.is_zipfile(zip):
 
-            # Initiates the 'ZipFile' class and creates the 'zip_archieve':
             with zipfile.ZipFile(zip, 'r') as zip_archieve:
-
-                # Get information about each file inside:
+                
                 for zip_file in zip_archieve.infolist():
 
-                    # Check if the file is a PDF:
                     if zip_file.filename.endswith('.pdf') or zip_file.filename.endswith('.PDF'):
 
-                        # Open the PDF file from the ZIP archive:
                         with zip_archieve.open(zip_file.filename, 'r') as pdf_file:
 
-                            try:                                
-                                # Read the PDF file's content in binary mode:
+                            try:
                                 pdf_data = io.BytesIO(pdf_file.read())
                                 pdf_reader = PdfReader(pdf_data)
-                                num_pages = len(pdf_reader.pages)
-                                if num_pages == 0:
-                                    msg = f"ERROR: {pdf_file} is invalid or empty!"
-                                    errors.append(msg)
 
                             except Exception as e:
-                                msg = f"{zip_archieve.filename} - {zip_file.filename}: {e}"
+
+                                msg = f"{zip_archieve.filename} - {pdf_file.name} : {e}"
                                 errors.append(msg)
+
+                            try:
+                                pages = len(pdf_reader.pages)
+                            
+                            except RecursionError as e:
+                                msg = f"{zip_archieve.filename} - {pdf_file.name} : {e}"
+                                warnings.append(msg)
 
                             # Write information to the result file
                             # - using 'format' method to include leading zeros on HH:MM:SS 
-                            # ({:02d}:{:02d}:{:02d})
+                            # ({:02d}:{:02d}:{:02d})                        
 
-                            # Zipinfo class parameters:
                             result_file.write("\n")
                             result_file.write("Archive name: {}\n".format(zip_archieve.filename))
                             result_file.write("File name: {}\n".format(zip_file.filename))
@@ -139,28 +144,30 @@ def zip_processing():
                             result_file.write("CRC: {}\n".format(zip_file.CRC))
                             result_file.write("Compressed size: {}\n".format(zip_file.compress_size))
                             result_file.write("Compress type: {}\n".format(zip_file.compress_type))
-                            #result_file.write("Pages: {}\n".format(len(pdf_reader.pages)))
+                            result_file.write("Pages: {}\n".format(pages))
                             result_file.write("\n")
                             file_count += 1  
 
-    logger_main.info("ZIP processing - Writes to results file")
-    logger_main.info("ZIP processing - Finished")
-
-zip_processing()
 tar_processing()
+zip_processing()
 
-# Writes the count:
+logger_main.info("Append the results to file")
+logger_main.info("Finished")
+
 result_file.write("Total files: {}\n".format(file_count))
 
-# Troubling ones:
 result_file.write("\n")
 result_file.write("ERRORS: ")
+result_file.write("\n")
 result_file.write("\n".join(map(str, errors)))
+
+result_file.write("\n")
+result_file.write("WARNINGS: ")
+result_file.write("\n")
+result_file.write("\n".join(map(str, warnings)))
 result_file.write("\n")
 
-#Print results
 print()
 print("RESULTS: --> ", result_file.name)
 
-#Close the file
 result_file.close()
