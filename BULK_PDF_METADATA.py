@@ -4,7 +4,7 @@ import zipfile
 import tarfile
 import logging
 import datetime
-from PyPDF2 import PdfReader
+from pdfreader import PDFDocument
 
     # <module>.
         # <class>.
@@ -23,11 +23,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 # Create the logger names and set level: 
 logger_main = logging.getLogger('STATUS')
 
-logger_zip = logging.getLogger("PyPDF2")
+logger_zip = logging.getLogger("PDFDocument")
 logger_zip.setLevel(logging.ERROR)
-
-logger_tar = logging.getLogger("tarfile")
-logger_tar.setLevel(logging.ERROR)
 
 # Results file:
 result_file = open(r"C:\Users\ratanasov2\OneDrive - DXC Production\Desktop\results", 'w')
@@ -65,24 +62,18 @@ def tar_processing():
 
                             try:
                                 pdf_data = io.BytesIO(pdf_file.read())
-                                pdf_reader = PdfReader(pdf_data)
-                                
+                                doc = PDFDocument(pdf_data)
+                                all_pages = [page for page in doc.pages()]
+
                             except Exception as e:
 
                                 msg = f"{tar_archieve.name} - {pdf_file.name} : {e}"
                                 errors.append(msg)
 
-                            try:
-                                pages = len(pdf_reader.pages)
-                            
-                            except RecursionError as e:
-                                msg = f"{tar_archieve.name} - {pdf_file.name} : {e}"
-                                warnings.append(msg)
-
                             result_file.write("\n")
                             result_file.write("Archieve: {}\n".format(tar_archieve.name))
                             result_file.write("Name: {}\n".format(pdf.name))
-                            result_file.write("Pages: {}\n".format(pages))
+                            result_file.write("Pages: {}\n".format(len(all_pages)))
                             result_file.write("Size: {}\n".format(pdf.size))
                             result_file.write("Time: {}\n".format(datetime.datetime.fromtimestamp(pdf.mtime).strftime('%Y-%M-%D %H:%M:%S')))
                             result_file.write("\n")
@@ -116,23 +107,18 @@ def zip_processing():
 
                             try:
                                 pdf_data = io.BytesIO(pdf_file.read())
-                                pdf_reader = PdfReader(pdf_data)
+                                doc = PDFDocument(pdf_data)
 
                             except Exception as e:
 
                                 msg = f"{zip_archieve.filename} - {pdf_file.name} : {e}"
                                 errors.append(msg)
-
-                            try:
-                                pages = len(pdf_reader.pages)
-                            
-                            except RecursionError as e:
-                                msg = f"{zip_archieve.filename} - {pdf_file.name} : {e}"
-                                warnings.append(msg)
-
+                                
                             # Write information to the result file
                             # - using 'format' method to include leading zeros on HH:MM:SS 
                             # ({:02d}:{:02d}:{:02d})                        
+
+                            all_pages = [page for page in doc.pages()]
 
                             result_file.write("\n")
                             result_file.write("Archive name: {}\n".format(zip_archieve.filename))
@@ -144,7 +130,7 @@ def zip_processing():
                             result_file.write("CRC: {}\n".format(zip_file.CRC))
                             result_file.write("Compressed size: {}\n".format(zip_file.compress_size))
                             result_file.write("Compress type: {}\n".format(zip_file.compress_type))
-                            result_file.write("Pages: {}\n".format(pages))
+                            result_file.write("Pages: {}\n".format(len(all_pages)))
                             result_file.write("\n")
                             file_count += 1  
 
@@ -154,17 +140,12 @@ zip_processing()
 logger_main.info("Append the results to file")
 logger_main.info("Finished")
 
-result_file.write("Total files: {}\n".format(file_count))
+result_file.write("TOTAL FILES: {}\n".format(file_count))
 
 result_file.write("\n")
-result_file.write("ERRORS: ")
+result_file.write("EXCEPTIONS: ")
 result_file.write("\n")
 result_file.write("\n".join(map(str, errors)))
-
-result_file.write("\n")
-result_file.write("WARNINGS: ")
-result_file.write("\n")
-result_file.write("\n".join(map(str, warnings)))
 result_file.write("\n")
 
 print()
