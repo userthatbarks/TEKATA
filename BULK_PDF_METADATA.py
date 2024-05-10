@@ -27,10 +27,10 @@ logger_zip = logging.getLogger("PDFDocument")
 logger_zip.setLevel(logging.ERROR)
 
 # Results file:
-result_file = open(r"C:\Users\ratanasov2\OneDrive - DXC Production\Desktop\results", 'w')
+result_file = open(r"C:\Users\User1\results", 'w')
 
 # Archieve directory:
-archieve_dir= r"C:\Users\ratanasov2\COMBO"
+archieve_dir= r"C:\Users\User1\COMBO"
 
 # TAR TAR TAR TAR TAR TAR TAR TAR TAR TAR TAR TAR
 
